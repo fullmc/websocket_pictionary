@@ -2,26 +2,28 @@ const socket = io("http://localhost:5500");
 
 socket.on("disconnect", () => {
 	console.log("Disconnected");
+	notifyUser("You have been disconnected.");
 });
 
 socket.on("connect", () => {
 	console.log("Connected");
 });
 
-socket.on("user disconnected", () => {
-	console.log("User disconnected");
+socket.on("user notification", (message) => {
+	console.log(message);
+	notifyUser(message);
 });
 
 socket.on("draw", (data) => {
 	drawLine(data);
 });
 
-// document.getElementById("erase").addEventListener("click", () => {
-// 	document.querySelector("canvas").getContext("2d").clearRect(0, 0, 600, 600); // Efface le contenu du canvas
-// });
+socket.on("erase", () => {
+	clearCanvas();
+});
+
 document.getElementById("erase").addEventListener("click", () => {
-	const ctx = document.querySelector("canvas").getContext("2d");
-	ctx.clearRect(0, 0, 600, 600); // Efface le contenu du canvas
+	clearCanvas();
 	socket.emit("erase");
 });
 
@@ -56,4 +58,14 @@ function drawLine({ pmouseX, pmouseY, mouseX, mouseY, color, weight }) {
 function clearCanvas() {
 	clear();
 	background(255);
+}
+
+function notifyUser(message) {
+	const notification = document.createElement("div");
+	notification.className = "notification";
+	notification.textContent = message;
+	document.body.appendChild(notification);
+	setTimeout(() => {
+		notification.remove();
+	}, 3000); // Supprime la notification après 3 secondes
 }

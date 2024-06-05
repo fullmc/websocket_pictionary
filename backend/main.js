@@ -18,25 +18,64 @@ app.get("/", (req, res) => {
 	res.json("ip address: http://" + ip.address() + ":" + PORT);
 });
 
+const words = ["cat", "dog", "house", "tree", "car"]; // Liste de mots
+let currentWord = null;
+let currentDrawer = null;
+let timer = null;
+const roundTime = 60; // Temps imparti en secondes
+
 io.on("connection", (socket) => {
 	console.log(`New connection: ${socket.id}`);
 
-	// Écoute des événements de dessin
+	socket.on("start game", () => {
+		if (!currentDrawer) {
+			startNewRound();
+		}
+	});
+
 	socket.on("draw", (data) => {
-		// Émet les données de dessin à tous les autres clients
 		socket.broadcast.emit("draw", data);
 	});
 
-	// Écoute des événements d'effacement
 	socket.on("erase", () => {
-		// Émet l'événement d'effacement à tous les autres clients
 		socket.broadcast.emit("erase");
+	});
+
+	socket.on("guess", (guess) => {
+		if (guess.toLowerCase() === currentWord) {
+			socket.emit("correct guess");
+			io.emit("message", `${socket.id} guessed the word!`);
+			startNewRound();
+		}
 	});
 
 	socket.on("disconnect", () => {
 		console.log(`User disconnected: ${socket.id}`);
+		if (socket.id === currentDrawer) {
+			clearTimeout(timer);
+			startNewRound();
+		}
+		socket.broadcast.emit(
+			"user notification",
+			`User disconnected: ${socket.id}`
+		);
 	});
 });
+
+function startNewRound() {
+	const clients = Array.from(io.sockets.sockets.keys());
+	if (clients.length === 0) return;
+
+	currentDrawer = clients[Math.floor(Math.random() * clients.length)];
+	currentWord = words[Math.floor(Math.random() * words.length)];
+	io.to(currentDrawer).emit("your turn", currentWord);
+	io.emit("message", `It's ${currentDrawer}'s turn to draw!`);
+
+	timer = setTimeout(() => {
+		io.emit("message", "Time's up!");
+		startNewRound();
+	}, roundTime * 1000);
+}
 
 server.listen(PORT, () => {
 	console.log("Server ip : http://" + ip.address() + ":" + PORT);

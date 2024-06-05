@@ -31,3 +31,10 @@ button {
 		text-align: center;
 	}
 }
+
+.notification {
+	background-color: rgba(0, 0, 0, 0.8);
+	color: white;
+	border-radius: 5px;
+	font-size: 16px;
+}
