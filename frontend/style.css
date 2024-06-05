@@ -1,0 +1,33 @@
+canvas {
+	display: block;
+	margin: 0 auto;
+	border: 1px solid black;
+	border-radius: 6px;
+}
+
+button {
+	border: none;
+	padding: 8px 24px;
+	border-radius: 5px;
+	cursor: pointer;
+	transition: background-color 0.3s ease, color 0.3s ease;
+	margin-bottom: 16px;
+
+	&:hover {
+		background-color: #f44336;
+		color: white;
+		transition: 0.3s ease-in-out;
+	}
+}
+
+.main {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 16px;
+
+	h1 {
+		text-align: center;
+	}
+}
