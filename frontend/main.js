@@ -23,6 +23,10 @@ socket.on("erase", () => {
 	clearCanvas();
 });
 
+socket.on("canvas data", (data) => {
+	data.forEach(drawLine);
+});
+
 document.getElementById("erase").addEventListener("click", () => {
 	socket.emit("erase");
 	clearCanvas();

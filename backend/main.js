@@ -18,6 +18,11 @@ app.get("/", (req, res) => {
 	res.json("ip address: http://" + ip.address() + ":" + PORT);
 });
 
+const canvasData = {
+	"room-1": [],
+	"room-2": [],
+};
+
 io.on("connection", (socket) => {
 	console.log(`New connection: ${socket.id}`);
 
@@ -27,21 +32,25 @@ io.on("connection", (socket) => {
 			// Leave all previous rooms
 			rooms.forEach((r) => {
 				if (r !== socket.id) {
-					socket.leave(r);
-					io.to(r).emit("user notification", `${socket.id} has left the room`);
+					// r musn't be the socket.id
+					socket.leave(r); // the socket leaves the room r
+					io.to(r).emit("user notification", `${socket.id} has left the room`); // send a notification to the room r
 				}
 			});
 		}
-		socket.join(room);
-		io.to(room).emit("user notification", `${socket.id} has joined the room`);
+		socket.join(room); // the socket joins the room
+		io.to(room).emit("user notification", `${socket.id} has joined the room`); // send a notification to the room
 		console.log(`${socket.id} joined room: ${room}`);
+		socket.emit("canvas data", canvasData[room]); // send the canvas data to the socket
 	});
 
 	socket.on("draw", (data) => {
-		const rooms = Array.from(socket.rooms);
-		const room = rooms.find((r) => r !== socket.id);
+		// data is an object containing the coordinates of the line to draw
+		const rooms = Array.from(socket.rooms); // rooms is an array of the rooms the socket is in
+		const room = rooms.find((r) => r !== socket.id); // room is the first room the socket is in that is not the socket.id
 		if (room) {
-			socket.to(room).emit("draw", data);
+			canvasData[room].push(data); // add the data (draw) to the canvas data of the room
+			socket.to(room).emit("draw", data); // send the data (draw) to the room (except the socket)
 		}
 	});
 
@@ -49,6 +58,7 @@ io.on("connection", (socket) => {
 		const rooms = Array.from(socket.rooms);
 		const room = rooms.find((r) => r !== socket.id);
 		if (room) {
+			canvasData[room] = []; // clear the canvas data of the room
 			socket.to(room).emit("erase");
 		}
 	});
