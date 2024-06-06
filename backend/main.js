@@ -3,7 +3,10 @@ import http from "http";
 import ip from "ip";
 import { Server } from "socket.io";
 import cors from "cors";
-
+import path from "path";
+import { fileURLToPath } from "url";
+let __dirname = fileURLToPath(import.meta.url);
+__dirname = __dirname.substring(0, __dirname.lastIndexOf("/")); // Remove the last part of the path
 const app = express();
 const server = http.createServer(app);
 const PORT = 5500;
@@ -13,9 +16,11 @@ const io = new Server(server, {
 	},
 });
 
+app.use(express.static(path.join(__dirname, "frontend")));
 app.use(cors());
 app.get("/", (req, res) => {
-	res.json("ip address: http://" + ip.address() + ":" + PORT);
+	// res.json("ip address: http://" + ip.address() + ":" + PORT);
+	res.sendFile(path.join(__dirname, "frontend/index.html"));
 });
 
 const canvasData = {
