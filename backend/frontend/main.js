@@ -1,5 +1,6 @@
 const socket = io("http://localhost:5500");
 let currentRoom = null;
+let role = null;
 
 socket.on("disconnect", () => {
 	console.log("Disconnected");
@@ -27,9 +28,31 @@ socket.on("canvas data", (data) => {
 	data.forEach(drawLine);
 });
 
+socket.on("role", ({ drawer, role: assignedRole }) => {
+	role = assignedRole;
+	if (assignedRole === "drawer") {
+		notifyUser("You are the drawer!");
+	}
+	updateUI();
+});
+
+socket.on("countdown", (count) => {
+	notifyUser(`Game starts in ${count} seconds...`);
+});
+
+socket.on("game start", () => {
+	if (role === "drawer") {
+		enableDrawing();
+	} else {
+		disableDrawing();
+	}
+});
+
 document.getElementById("erase").addEventListener("click", () => {
-	socket.emit("erase");
-	clearCanvas();
+	if (role === "drawer") {
+		socket.emit("erase");
+		clearCanvas();
+	}
 });
 
 function setup() {
@@ -37,10 +60,11 @@ function setup() {
 	background(255); // Ajout d'un fond blanc
 	strokeWeight(2); // Définit l'épaisseur du trait
 	stroke(0); // Couleur du trait (noir)
+	disableDrawing();
 }
 
 function draw() {
-	if (mouseIsPressed && currentRoom) {
+	if (mouseIsPressed && role === "drawer" && currentRoom) {
 		const data = {
 			pmouseX,
 			pmouseY,
@@ -90,5 +114,25 @@ function notifyUser(message) {
 	document.body.appendChild(notification);
 	setTimeout(() => {
 		notification.remove();
-	}, 3000); // Supprime la notification après 3 secondes
+	}, 5000); // Supprime la notification après 3 secondes
+}
+
+function updateUI() {
+	const eraseButton = document.getElementById("erase");
+	const passButton = document.getElementById("pass");
+	if (role === "drawer") {
+		eraseButton.disabled = false;
+		passButton.disabled = false;
+	} else {
+		eraseButton.disabled = true;
+		passButton.disabled = true;
+	}
+}
+
+function enableDrawing() {
+	document.body.style.cursor = "crosshair"; // Change the cursor to a crosshair when drawing
+}
+
+function disableDrawing() {
+	document.body.style.cursor = "default"; // Change the cursor to default
 }
