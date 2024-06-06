@@ -1,5 +1,5 @@
 const socket = io("http://localhost:5500");
-const data = document.querySelector(".data");
+let currentRoom = null;
 
 socket.on("disconnect", () => {
 	console.log("Disconnected");
@@ -15,14 +15,16 @@ socket.on("user notification", (message) => {
 	notifyUser(message);
 });
 
-socket.on("leave", (data) => {
-	console.log("left game: " + data);
-	const p = document.createElement("p");
-	p.innerText = `user ${data} left the game: `;
-	data.appendChild(p); // add message to the DOM
+socket.on("draw", (data) => {
+	drawLine(data);
+});
+
+socket.on("erase", () => {
+	clearCanvas();
 });
 
 document.getElementById("erase").addEventListener("click", () => {
+	socket.emit("erase");
 	clearCanvas();
 });
 
@@ -34,7 +36,7 @@ function setup() {
 }
 
 function draw() {
-	if (mouseIsPressed) {
+	if (mouseIsPressed && currentRoom) {
 		const data = {
 			pmouseX,
 			pmouseY,
@@ -42,6 +44,7 @@ function draw() {
 			mouseY,
 			color: [0, 0, 0], // Couleur noire
 			weight: 2, // Épaisseur du trait
+			room: currentRoom,
 		};
 		socket.emit("draw", data);
 		drawLine(data);
@@ -68,7 +71,12 @@ document.getElementById("room-2").addEventListener("click", () => {
 });
 
 function joinRoom(room) {
+	if (currentRoom) {
+		socket.emit("leave", currentRoom);
+	}
 	socket.emit("join", room);
+	currentRoom = room;
+	clearCanvas(); // Clear canvas when switching rooms
 }
 
 function notifyUser(message) {
@@ -78,5 +86,5 @@ function notifyUser(message) {
 	document.body.appendChild(notification);
 	setTimeout(() => {
 		notification.remove();
-	}, 5000); // Supprime la notification après 3 secondes
+	}, 3000); // Supprime la notification après 3 secondes
 }

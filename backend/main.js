@@ -21,13 +21,6 @@ app.get("/", (req, res) => {
 io.on("connection", (socket) => {
 	console.log(`New connection: ${socket.id}`);
 
-	// afficher l'user connecté
-	socket.broadcast.emit("user notification", `${socket.id} is online`);
-
-	socket.on("erase", () => {
-		socket.broadcast.emit("erase");
-	});
-
 	socket.on("join", (room) => {
 		const rooms = Array.from(socket.rooms);
 		if (rooms.length > 1) {
@@ -40,17 +33,24 @@ io.on("connection", (socket) => {
 			});
 		}
 		socket.join(room);
-		io.to(room).emit(
-			"user notification",
-			`${socket.id} has joined the ${room}`
-		);
+		io.to(room).emit("user notification", `${socket.id} has joined the room`);
 		console.log(`${socket.id} joined room: ${room}`);
 	});
 
-	socket.on("leave", (room) => {
-		socket.leave(room);
-		io.to(room).emit("user notification", `${socket.id} has left the ${room}`);
-		console.log(`${socket.id} left room: ${room}`);
+	socket.on("draw", (data) => {
+		const rooms = Array.from(socket.rooms);
+		const room = rooms.find((r) => r !== socket.id);
+		if (room) {
+			socket.to(room).emit("draw", data);
+		}
+	});
+
+	socket.on("erase", () => {
+		const rooms = Array.from(socket.rooms);
+		const room = rooms.find((r) => r !== socket.id);
+		if (room) {
+			socket.to(room).emit("erase");
+		}
 	});
 
 	socket.on("disconnect", () => {
@@ -58,21 +58,6 @@ io.on("connection", (socket) => {
 		socket.broadcast.emit("user notification", `${socket.id} is offline`);
 	});
 });
-
-// function startNewRound() {
-// 	const clients = Array.from(io.sockets.sockets.keys());
-// 	if (clients.length === 0) return;
-
-// 	currentDrawer = clients[Math.floor(Math.random() * clients.length)];
-// 	currentWord = words[Math.floor(Math.random() * words.length)];
-// 	io.to(currentDrawer).emit("your turn", currentWord);
-// 	io.emit("message", `It's ${currentDrawer}'s turn to draw!`);
-
-// 	timer = setTimeout(() => {
-// 		io.emit("message", "Time's up!");
-// 		startNewRound();
-// 	}, roundTime * 1000);
-// }
 
 server.listen(PORT, () => {
 	console.log("Server ip : http://" + ip.address() + ":" + PORT);
