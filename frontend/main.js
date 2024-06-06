@@ -1,4 +1,5 @@
 const socket = io("http://localhost:5500");
+const data = document.querySelector(".data");
 
 socket.on("disconnect", () => {
 	console.log("Disconnected");
@@ -14,17 +15,15 @@ socket.on("user notification", (message) => {
 	notifyUser(message);
 });
 
-socket.on("draw", (data) => {
-	drawLine(data);
-});
-
-socket.on("erase", () => {
-	clearCanvas();
+socket.on("leave", (data) => {
+	console.log("left game: " + data);
+	const p = document.createElement("p");
+	p.innerText = `user ${data} left the game: `;
+	data.appendChild(p); // add message to the DOM
 });
 
 document.getElementById("erase").addEventListener("click", () => {
 	clearCanvas();
-	socket.emit("erase");
 });
 
 function setup() {
@@ -60,6 +59,18 @@ function clearCanvas() {
 	background(255);
 }
 
+document.getElementById("room-1").addEventListener("click", () => {
+	joinRoom("room-1");
+});
+
+document.getElementById("room-2").addEventListener("click", () => {
+	joinRoom("room-2");
+});
+
+function joinRoom(room) {
+	socket.emit("join", room);
+}
+
 function notifyUser(message) {
 	const notification = document.createElement("div");
 	notification.className = "notification";
@@ -67,5 +78,5 @@ function notifyUser(message) {
 	document.body.appendChild(notification);
 	setTimeout(() => {
 		notification.remove();
-	}, 3000); // Supprime la notification après 3 secondes
+	}, 5000); // Supprime la notification après 3 secondes
 }
