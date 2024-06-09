@@ -1,4 +1,4 @@
-const socket = io("http://localhost:5500");
+const socket = io("https://websocket-pictionary.onrender.com/");
 let currentRoom = null;
 let role = null;
 
