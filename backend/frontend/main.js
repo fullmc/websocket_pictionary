@@ -44,11 +44,11 @@ socket.on("role", ({ drawer, role: assignedRole }) => {
 });
 
 socket.on("session countdown", (count) => {
+	const countdown = document.getElementById("countdown");
 	const minutes = Math.floor(count / 60);
 	const seconds = count % 60;
-	document.getElementById(
-		"countdown"
-	).textContent = `Session time left: ${minutes}:${
+	countdown.style.display = "block";
+	countdown.textContent = `Session time left: ${minutes}:${
 		seconds < 10 ? "0" + seconds : seconds
 	}`;
 });
@@ -150,9 +150,12 @@ function enableDrawing() {
 }
 
 function notifyUser(message) {
-	const notification = document.createElement("div");
+	const notification = document.getElementById("notification");
+	notification.style.display = "block";
 	notification.textContent = message;
-	document.body.appendChild(notification);
+	setTimeout(() => {
+		notification.textContent = "";
+	}, 3000);
 }
 
 function updatePoints(points) {

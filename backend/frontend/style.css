@@ -26,15 +26,19 @@ button {
 	justify-content: center;
 	align-items: center;
 	gap: 16px;
-
 	h1 {
 		text-align: center;
 	}
 }
 
-.notification {
+#notification {
 	background-color: rgba(0, 0, 0, 0.8);
 	color: white;
 	border-radius: 5px;
 	font-size: 16px;
+	display: none;
+}
+
+#countdown {
+	display: none;
 }
