@@ -54,6 +54,9 @@ socket.on("session countdown", (count) => {
 });
 
 socket.on("session ended", () => {
+	disableDrawing();
+	notifyUser("Session ended!");
+	document.getElementById("guess-input").disabled = true;
 	// Effectuez toute action nécessaire à la fin de la session
 });
 
