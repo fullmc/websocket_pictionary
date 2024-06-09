@@ -87,6 +87,12 @@ document.getElementById("guess-input").addEventListener("keypress", (e) => {
 	}
 });
 
+document.getElementById("play").addEventListener("click", () => {
+	if (currentRoom) {
+		socket.emit("play");
+	}
+});
+
 function setup() {
 	createCanvas(600, 600);
 	background(255); // Ajout d'un fond blanc

@@ -30,8 +30,20 @@ const canvasData = {
 };
 
 const roomData = {
-	"room-1": { drawer: null, users: [], points: {}, currentWord: null },
-	"room-2": { drawer: null, users: [], points: {}, currentWord: null },
+	"room-1": {
+		drawer: null,
+		users: [],
+		points: {},
+		currentWord: null,
+		gameStarted: false,
+	},
+	"room-2": {
+		drawer: null,
+		users: [],
+		points: {},
+		currentWord: null,
+		gameStarted: false,
+	},
 };
 
 const roomWords = {
@@ -70,10 +82,10 @@ io.on("connection", (socket) => {
 		// Notify the user of the room they joined
 		socket.emit("room info", room);
 
-		// Reassign roles and reset canvas when joining room
-		canvasData[room] = [];
-		io.to(room).emit("erase"); // Clear canvas for all users in the room
-		assignRoles(room);
+		// Only notify about roles if the game has started
+		if (roomData[room].gameStarted) {
+			notifyRoles(room);
+		}
 	});
 
 	socket.on("draw", (data) => {
@@ -110,6 +122,20 @@ io.on("connection", (socket) => {
 		}
 	});
 
+	socket.on("play", () => {
+		const rooms = Array.from(socket.rooms);
+		const room = rooms.find((r) => r !== socket.id);
+		if (room && !roomData[room].gameStarted) {
+			roomData[room].gameStarted = true;
+			assignRoles(room);
+			io.to(room).emit("countdown", 3); // Start 3 seconds countdown
+			setTimeout(() => {
+				assignNewWord(room);
+				io.to(room).emit("game start");
+			}, 3000);
+		}
+	});
+
 	socket.on("disconnect", () => {
 		console.log("Disconnected: " + socket.id);
 		const rooms = Array.from(socket.rooms);
@@ -120,7 +146,9 @@ io.on("connection", (socket) => {
 			if (roomData[room].drawer === socket.id) {
 				roomData[room].drawer = null;
 			}
-			assignRoles(room);
+			if (roomData[room].gameStarted) {
+				assignRoles(room);
+			}
 		});
 		socket.broadcast.emit("user notification", `${socket.id} is offline`);
 	});
@@ -137,22 +165,21 @@ io.on("connection", (socket) => {
 					];
 				roomData[room].drawer = drawer;
 			}
-			roomData[room].users.forEach((id) => {
-				if (id === roomData[room].drawer) {
-					io.to(id).emit("role", { drawer: id, role: "drawer" });
-				} else {
-					io.to(id).emit("role", {
-						drawer: roomData[room].drawer,
-						role: "guesser",
-					});
-				}
-			});
-			io.to(room).emit("countdown", 3); // Start 3 seconds countdown
-			setTimeout(() => {
-				assignNewWord(room);
-				io.to(room).emit("game start");
-			}, 3000);
+			notifyRoles(room);
 		}
+	}
+
+	function notifyRoles(room) {
+		roomData[room].users.forEach((id) => {
+			if (id === roomData[room].drawer) {
+				io.to(id).emit("role", { drawer: id, role: "drawer" });
+			} else {
+				io.to(id).emit("role", {
+					drawer: roomData[room].drawer,
+					role: "guesser",
+				});
+			}
+		});
 	}
 
 	function assignNewWord(room) {
