@@ -33,11 +33,11 @@ socket.on("canvas data", (data) => {
 socket.on("role", ({ drawer, role: assignedRole }) => {
 	role = assignedRole;
 	if (assignedRole === "drawer") {
-		notifyUser("You are the drawer!");
+		document.getElementById("user-role").textContent = "You are the drawer!";
 		document.getElementById("guess-input").disabled = true;
 		document.getElementById("erase").disabled = false;
 	} else if (assignedRole === "guesser") {
-		notifyUser("You are a guesser!");
+		document.getElementById("user-role").textContent = "You are a guesser!";
 		document.getElementById("guess-input").disabled = false;
 		document.getElementById("erase").disabled = true;
 	}
@@ -82,7 +82,9 @@ socket.on("update points", (points) => {
 
 socket.on("word to draw", (word) => {
 	if (role === "drawer") {
-		notifyUser(`Draw this word: ${word}`);
+		document.getElementById(
+			"word-to-draw"
+		).textContent = `Word to draw: ${word}`;
 	}
 });
 
