@@ -100,8 +100,8 @@ io.on("connection", (socket) => {
 			roomData[room].points[socket.id]++;
 			io.to(room).emit("user notification", `${socket.id} guessed the word!`);
 			io.to(room).emit("update points", roomData[room].points);
-			io.to(room).emit("new round"); // Start a new round
-			assignRoles(room); // Reassign roles and start a new game
+			io.to(room).emit("new round"); // Notify the room of the new round
+			assignNewWord(room); // Assign a new word without changing roles
 		}
 	});
 
@@ -151,6 +151,13 @@ io.on("connection", (socket) => {
 				io.to(room).emit("game start");
 			}, 3000);
 		}
+	}
+
+	function assignNewWord(room) {
+		const randomWord =
+			roomWords[room][Math.floor(Math.random() * roomWords[room].length)];
+		roomData[room].currentWord = randomWord;
+		io.to(roomData[room].drawer).emit("word to draw", randomWord);
 	}
 });
 
