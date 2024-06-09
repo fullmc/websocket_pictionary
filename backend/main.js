@@ -153,8 +153,7 @@ io.on("connection", (socket) => {
 				(id) => id !== roomData[room].drawer
 			); // Exclure le dessinateur actuel
 			if (availableUsers.length > 0) {
-				roomData[room].drawer =
-					availableUsers[Math.floor(Math.random() * availableUsers.length)]; // Choix aléatoire parmi les joueurs restants
+				roomData[room].drawer = availableUsers[0]; // Assigner le premier utilisateur comme dessinateur
 			} else {
 				// Aucun joueur disponible pour être dessinateur, informez les joueurs de la nécessité de plus de joueurs
 				io.to(room).emit(
