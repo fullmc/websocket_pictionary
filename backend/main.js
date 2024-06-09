@@ -127,11 +127,9 @@ io.on("connection", (socket) => {
 		const room = rooms.find((r) => r !== socket.id);
 		if (room) {
 			assignRoles(room);
-			io.to(room).emit("countdown", 60); // Start 60 seconds countdown
-			setTimeout(() => {
-				assignNewWord(room);
-				io.to(room).emit("game start");
-			}, 3000); // Wait for 60 seconds before starting the game
+			startSessionTimer(room, 60); // Démarre le minuteur pour une session de 60 secondes
+			assignNewWord(room);
+			io.to(room).emit("game start");
 		}
 	});
 
@@ -170,18 +168,15 @@ io.on("connection", (socket) => {
 		io.to(roomData[room].drawer).emit("word to draw", newWord);
 	}
 
-	function assignNewDrawer(room) {
-		// Choisissez le nouveau dessinateur parmi les utilisateurs de la salle
-		const users = roomData[room].users;
-		const newDrawer = users[Math.floor(Math.random() * users.length)];
-
-		roomData[room].drawer = newDrawer;
-
-		// Met à jour les rôles pour tous les utilisateurs de la salle
-		updateRoles(room);
-
-		// Notify the new drawer
-		io.to(newDrawer).emit("role", { drawer: newDrawer, role: "drawer" });
+	function startSessionTimer(room, duration) {
+		let timer = duration;
+		const interval = setInterval(() => {
+			io.to(room).emit("session countdown", timer);
+			if (--timer < 0) {
+				clearInterval(interval);
+				io.to(room).emit("session ended");
+			}
+		}, 1000);
 	}
 });
 

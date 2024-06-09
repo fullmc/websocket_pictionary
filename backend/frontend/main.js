@@ -1,7 +1,6 @@
 const socket = io("http://localhost:5500");
 let currentRoom = null;
 let role = null;
-let timerInterval; // Ajout de la variable pour stocker l'intervalle du timer
 
 socket.on("disconnect", () => {
 	console.log("Disconnected");
@@ -10,6 +9,8 @@ socket.on("disconnect", () => {
 
 socket.on("connect", () => {
 	console.log("Connected");
+	// Au moment de la connexion, rejoignez une salle
+	socket.emit("play");
 });
 
 socket.on("user notification", (message) => {
@@ -42,14 +43,18 @@ socket.on("role", ({ drawer, role: assignedRole }) => {
 	}
 });
 
-socket.on("countdown", (count) => {
-	// notifyUser(`Game starts in ${count} seconds...`);
-	// document.getElementById(
-	// 	"start-countdown"
-	// ).textContent = `Game starts in ${count} seconds...`;
+socket.on("session countdown", (count) => {
+	const minutes = Math.floor(count / 60);
+	const seconds = count % 60;
+	document.getElementById(
+		"countdown"
+	).textContent = `Session time left: ${minutes}:${
+		seconds < 10 ? "0" + seconds : seconds
+	}`;
+});
 
-	// Démarre le timer en temps réel
-	startTimer(count);
+socket.on("session ended", () => {
+	// Effectuez toute action nécessaire à la fin de la session
 });
 
 socket.on("game start", () => {
@@ -58,9 +63,9 @@ socket.on("game start", () => {
 	} else {
 		disableDrawing();
 	}
-
-	// Arrête le timer une fois le jeu commencé
-	clearInterval(timerInterval);
+	// Arrête le minuteur de session une fois le jeu commencé
+	clearInterval(sessionTimerInterval);
+	// Autres actions à exécuter au début du jeu
 });
 
 socket.on("room info", (room) => {
@@ -134,11 +139,11 @@ function clearCanvas() {
 }
 
 function disableDrawing() {
-	noLoop();
+	noLoop(); // Désactive la boucle draw
 }
 
 function enableDrawing() {
-	loop();
+	loop(); // Réactive la boucle draw
 }
 
 function notifyUser(message) {
@@ -177,29 +182,3 @@ document.getElementById("quit").addEventListener("click", () => {
 		currentRoom = null;
 	}
 });
-
-function startTimer(duration) {
-	let timer = duration,
-		minutes,
-		seconds;
-	timerInterval = setInterval(function () {
-		minutes = parseInt(timer / 60, 10);
-		seconds = parseInt(timer % 60, 10);
-
-		minutes = minutes < 10 ? "0" + minutes : minutes;
-		seconds = seconds < 10 ? "0" + seconds : seconds;
-
-		document.getElementById(
-			"countdown"
-		).textContent = `Time left: ${minutes}:${seconds}`;
-
-		if (--timer < 0) {
-			clearInterval(timerInterval);
-			// End the game if timer is up
-			socket.emit("time up");
-		}
-	}, 1000);
-}
-
-window.setup = setup;
-window.draw = draw;
