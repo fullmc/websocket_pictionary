@@ -157,7 +157,7 @@ function notifyUser(message) {
 		setTimeout(() => {
 			notification.textContent = "";
 			notification.style.display = "none";
-		}, 3000);
+		}, 5000);
 	}
 }
 

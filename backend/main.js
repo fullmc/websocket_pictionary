@@ -134,14 +134,37 @@ io.on("connection", (socket) => {
 	});
 
 	function assignRoles(room) {
-		if (roomData[room].users.length > 0) {
-			if (!roomData[room].drawer) {
-				roomData[room].drawer =
-					roomData[room].users[0] ||
-					Math.random() * roomData[room].users.length;
-			}
-			updateRoles(room);
+		const numPlayers = roomData[room].users.length;
+		if (numPlayers < 2) {
+			// Pas assez de joueurs pour commencer le jeu, informez les joueurs
+			io.to(room).emit(
+				"user notification",
+				"Not enough players to start the game. Need at least two players."
+			);
+			return; // Sortir de la fonction sans mettre à jour les rôles
 		}
+
+		if (
+			!roomData[room].drawer ||
+			!roomData[room].users.includes(roomData[room].drawer)
+		) {
+			// Si aucun dessinateur n'est défini ou si le dessinateur actuel n'est plus dans la salle, attribuez-en un nouveau
+			const availableUsers = roomData[room].users.filter(
+				(id) => id !== roomData[room].drawer
+			); // Exclure le dessinateur actuel
+			if (availableUsers.length > 0) {
+				roomData[room].drawer =
+					availableUsers[Math.floor(Math.random() * availableUsers.length)]; // Choix aléatoire parmi les joueurs restants
+			} else {
+				// Aucun joueur disponible pour être dessinateur, informez les joueurs de la nécessité de plus de joueurs
+				io.to(room).emit(
+					"user notification",
+					"Not enough players to start the game. Need at least one more player."
+				);
+				return; // Sortir de la fonction sans mettre à jour les rôles
+			}
+		}
+		updateRoles(room); // Mettre à jour les rôles pour tous les joueurs dans la salle
 	}
 
 	function updateRoles(room) {
