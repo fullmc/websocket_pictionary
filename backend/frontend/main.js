@@ -32,7 +32,7 @@ socket.on("role", ({ drawer, role: assignedRole }) => {
 	role = assignedRole;
 	if (assignedRole === "drawer") {
 		notifyUser("You are the drawer!");
-		document.getElementById("guess-input").disabled = true;
+		document.getElementById("guess-input").disabled = false;
 		const userRole = document.createElement("div");
 		userRole.textContent = "Drawer";
 		document.body.appendChild(userRole);
@@ -55,6 +55,11 @@ socket.on("game start", () => {
 	} else {
 		disableDrawing();
 	}
+});
+
+socket.on("room info", (room) => {
+	notifyUser(`You are in ${room}`);
+	currentRoom = room;
 });
 
 document.getElementById("erase").addEventListener("click", () => {

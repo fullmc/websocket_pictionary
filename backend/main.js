@@ -34,6 +34,11 @@ const roomData = {
 	"room-2": { drawer: null, users: [] },
 };
 
+const roomWords = {
+	"room-1": ["apple", "banana", "poo", "sofa", "monkey"],
+	"room-2": ["fig", "grape", "honeydew", "kiwi", "lemon"],
+};
+
 io.on("connection", (socket) => {
 	console.log(`New connection: ${socket.id}`);
 
@@ -55,6 +60,9 @@ io.on("connection", (socket) => {
 		io.to(room).emit("user notification", `${socket.id} has joined the room`);
 		console.log(`${socket.id} joined room: ${room}`);
 		socket.emit("canvas data", canvasData[room]);
+
+		// Notify the user of the room they joined
+		socket.emit("room info", room);
 
 		// Reassign roles and reset canvas when joining room
 		canvasData[room] = [];
