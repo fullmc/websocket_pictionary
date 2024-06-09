@@ -114,8 +114,10 @@ io.on("connection", (socket) => {
 			);
 			if (roomData[room].drawer === socket.id) {
 				roomData[room].drawer = null;
+				assignRoles(room); // Reassign roles to ensure there is a drawer
+			} else {
+				updateRoles(room); // Update roles without reassigning drawer
 			}
-			assignRoles(room);
 		});
 		socket.broadcast.emit("user notification", `${socket.id} is offline`);
 	});
@@ -135,27 +137,24 @@ io.on("connection", (socket) => {
 
 	function assignRoles(room) {
 		if (roomData[room].users.length > 0) {
-			if (
-				!roomData[room].drawer ||
-				!roomData[room].users.includes(roomData[room].drawer)
-			) {
-				const drawer =
-					roomData[room].users[
-						Math.floor(Math.random() * roomData[room].users.length)
-					];
-				roomData[room].drawer = drawer;
+			if (!roomData[room].drawer) {
+				roomData[room].drawer = roomData[room].users[0];
 			}
-			roomData[room].users.forEach((id) => {
-				if (id === roomData[room].drawer) {
-					io.to(id).emit("role", { drawer: id, role: "drawer" });
-				} else {
-					io.to(id).emit("role", {
-						drawer: roomData[room].drawer,
-						role: "guesser",
-					});
-				}
-			});
+			updateRoles(room);
 		}
+	}
+
+	function updateRoles(room) {
+		roomData[room].users.forEach((id) => {
+			if (id === roomData[room].drawer) {
+				io.to(id).emit("role", { drawer: id, role: "drawer" });
+			} else {
+				io.to(id).emit("role", {
+					drawer: roomData[room].drawer,
+					role: "guesser",
+				});
+			}
+		});
 	}
 
 	function assignNewWord(room) {
