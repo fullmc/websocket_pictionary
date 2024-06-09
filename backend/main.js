@@ -127,18 +127,20 @@ io.on("connection", (socket) => {
 		const room = rooms.find((r) => r !== socket.id);
 		if (room) {
 			assignRoles(room);
-			io.to(room).emit("countdown", 3); // Start 3 seconds countdown
+			io.to(room).emit("countdown", 60); // Start 60 seconds countdown
 			setTimeout(() => {
 				assignNewWord(room);
 				io.to(room).emit("game start");
-			}, 3000);
+			}, 3000); // Wait for 60 seconds before starting the game
 		}
 	});
 
 	function assignRoles(room) {
 		if (roomData[room].users.length > 0) {
 			if (!roomData[room].drawer) {
-				roomData[room].drawer = roomData[room].users[0];
+				roomData[room].drawer =
+					roomData[room].users[0] ||
+					Math.random() * roomData[room].users.length;
 			}
 			updateRoles(room);
 		}
@@ -166,6 +168,20 @@ io.on("connection", (socket) => {
 		} while (newWord === currentWord);
 		roomData[room].currentWord = newWord;
 		io.to(roomData[room].drawer).emit("word to draw", newWord);
+	}
+
+	function assignNewDrawer(room) {
+		// Choisissez le nouveau dessinateur parmi les utilisateurs de la salle
+		const users = roomData[room].users;
+		const newDrawer = users[Math.floor(Math.random() * users.length)];
+
+		roomData[room].drawer = newDrawer;
+
+		// Met à jour les rôles pour tous les utilisateurs de la salle
+		updateRoles(room);
+
+		// Notify the new drawer
+		io.to(newDrawer).emit("role", { drawer: newDrawer, role: "drawer" });
 	}
 });
 

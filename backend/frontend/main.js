@@ -1,6 +1,7 @@
 const socket = io("http://localhost:5500");
 let currentRoom = null;
 let role = null;
+let timerInterval; // Ajout de la variable pour stocker l'intervalle du timer
 
 socket.on("disconnect", () => {
 	console.log("Disconnected");
@@ -42,10 +43,13 @@ socket.on("role", ({ drawer, role: assignedRole }) => {
 });
 
 socket.on("countdown", (count) => {
-	notifyUser(`Game starts in ${count} seconds...`);
-	document.getElementById(
-		"countdown"
-	).textContent = `Game starts in ${count} seconds...`;
+	// notifyUser(`Game starts in ${count} seconds...`);
+	// document.getElementById(
+	// 	"start-countdown"
+	// ).textContent = `Game starts in ${count} seconds...`;
+
+	// Démarre le timer en temps réel
+	startTimer(count);
 });
 
 socket.on("game start", () => {
@@ -54,7 +58,9 @@ socket.on("game start", () => {
 	} else {
 		disableDrawing();
 	}
-	document.getElementById("countdown").textContent = "";
+
+	// Arrête le timer une fois le jeu commencé
+	clearInterval(timerInterval);
 });
 
 socket.on("room info", (room) => {
@@ -171,6 +177,29 @@ document.getElementById("quit").addEventListener("click", () => {
 		currentRoom = null;
 	}
 });
+
+function startTimer(duration) {
+	let timer = duration,
+		minutes,
+		seconds;
+	timerInterval = setInterval(function () {
+		minutes = parseInt(timer / 60, 10);
+		seconds = parseInt(timer % 60, 10);
+
+		minutes = minutes < 10 ? "0" + minutes : minutes;
+		seconds = seconds < 10 ? "0" + seconds : seconds;
+
+		document.getElementById(
+			"countdown"
+		).textContent = `Time left: ${minutes}:${seconds}`;
+
+		if (--timer < 0) {
+			clearInterval(timerInterval);
+			// End the game if timer is up
+			socket.emit("time up");
+		}
+	}, 1000);
+}
 
 window.setup = setup;
 window.draw = draw;
