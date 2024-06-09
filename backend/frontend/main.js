@@ -32,12 +32,13 @@ socket.on("role", ({ drawer, role: assignedRole }) => {
 	role = assignedRole;
 	if (assignedRole === "drawer") {
 		notifyUser("You are the drawer!");
-		document.getElementById("guess-input").disabled = false;
+		document.getElementById("guess-input").disabled = true;
 		const userRole = document.createElement("div");
 		userRole.textContent = "Drawer";
 		document.body.appendChild(userRole);
 	} else if (assignedRole === "guesser") {
 		notifyUser("You are a guesser!");
+		document.getElementById("guess-input").disabled = false;
 		const userRole = document.createElement("div");
 		userRole.textContent = "Guesser";
 		document.body.appendChild(userRole);
@@ -62,10 +63,40 @@ socket.on("room info", (room) => {
 	currentRoom = room;
 });
 
+socket.on("word to draw", (word) => {
+	if (role === "drawer") {
+		notifyUser(`Your word to draw is: ${word}`);
+	}
+});
+
+socket.on("update points", (points) => {
+	const pointsElement = document.getElementById("points");
+	pointsElement.innerHTML = "Points: " + JSON.stringify(points, null, 2);
+});
+
+socket.on("new round", () => {
+	clearCanvas();
+	if (role === "drawer") {
+		disableDrawing();
+	}
+	notifyUser("New round starting...");
+	setTimeout(() => {
+		joinRoom(currentRoom); // Rejoin the current room to start a new round
+	}, 2000);
+});
+
 document.getElementById("erase").addEventListener("click", () => {
 	if (role === "drawer") {
 		socket.emit("erase");
 		clearCanvas();
+	}
+});
+
+document.getElementById("guess-input").addEventListener("keypress", (e) => {
+	if (e.key === "Enter") {
+		const guess = e.target.value;
+		socket.emit("submit guess", guess);
+		e.target.value = "";
 	}
 });
 

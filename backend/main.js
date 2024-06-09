@@ -30,8 +30,8 @@ const canvasData = {
 };
 
 const roomData = {
-	"room-1": { drawer: null, users: [] },
-	"room-2": { drawer: null, users: [] },
+	"room-1": { drawer: null, users: [], points: {} },
+	"room-2": { drawer: null, users: [], points: {} },
 };
 
 const roomWords = {
@@ -57,6 +57,7 @@ io.on("connection", (socket) => {
 		}
 		socket.join(room);
 		roomData[room].users.push(socket.id);
+		roomData[room].points[socket.id] = 0;
 		io.to(room).emit("user notification", `${socket.id} has joined the room`);
 		console.log(`${socket.id} joined room: ${room}`);
 		socket.emit("canvas data", canvasData[room]);
@@ -85,6 +86,21 @@ io.on("connection", (socket) => {
 		if (room && roomData[room].drawer === socket.id) {
 			canvasData[room] = [];
 			socket.to(room).emit("erase");
+		}
+	});
+
+	socket.on("submit guess", (guess) => {
+		const rooms = Array.from(socket.rooms);
+		const room = rooms.find((r) => r !== socket.id);
+		if (
+			room &&
+			roomData[room].currentWord &&
+			guess.toLowerCase() === roomData[room].currentWord.toLowerCase()
+		) {
+			roomData[room].points[socket.id]++;
+			io.to(room).emit("user notification", `${socket.id} guessed the word!`);
+			io.to(room).emit("update points", roomData[room].points);
+			io.to(room).emit("new round"); // Start a new round
 		}
 	});
 
@@ -124,6 +140,10 @@ io.on("connection", (socket) => {
 			});
 			io.to(room).emit("countdown", 3); // Start 3 seconds countdown
 			setTimeout(() => {
+				const randomWord =
+					roomWords[room][Math.floor(Math.random() * roomWords[room].length)];
+				roomData[room].currentWord = randomWord;
+				io.to(roomData[room].drawer).emit("word to draw", randomWord);
 				io.to(room).emit("game start");
 			}, 3000);
 		}
