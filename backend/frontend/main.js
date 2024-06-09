@@ -33,21 +33,19 @@ socket.on("role", ({ drawer, role: assignedRole }) => {
 	if (assignedRole === "drawer") {
 		notifyUser("You are the drawer!");
 		document.getElementById("guess-input").disabled = true;
-		const userRole = document.createElement("div");
-		userRole.textContent = "Drawer";
-		document.body.appendChild(userRole);
+		document.getElementById("erase").disabled = false;
 	} else if (assignedRole === "guesser") {
 		notifyUser("You are a guesser!");
 		document.getElementById("guess-input").disabled = false;
-		const userRole = document.createElement("div");
-		userRole.textContent = "Guesser";
-		document.body.appendChild(userRole);
+		document.getElementById("erase").disabled = true;
 	}
-	updateUI();
 });
 
 socket.on("countdown", (count) => {
 	notifyUser(`Game starts in ${count} seconds...`);
+	document.getElementById(
+		"countdown"
+	).textContent = `Game starts in ${count} seconds...`;
 });
 
 socket.on("game start", () => {
@@ -56,6 +54,7 @@ socket.on("game start", () => {
 	} else {
 		disableDrawing();
 	}
+	document.getElementById("countdown").textContent = "";
 });
 
 socket.on("room info", (room) => {
@@ -63,26 +62,14 @@ socket.on("room info", (room) => {
 	currentRoom = room;
 });
 
+socket.on("update points", (points) => {
+	updatePoints(points);
+});
+
 socket.on("word to draw", (word) => {
 	if (role === "drawer") {
-		notifyUser(`Your word to draw is: ${word}`);
+		notifyUser(`Draw this word: ${word}`);
 	}
-});
-
-socket.on("update points", (points) => {
-	const pointsElement = document.getElementById("points");
-	pointsElement.innerHTML = "Points: " + JSON.stringify(points, null, 2);
-});
-
-socket.on("new round", () => {
-	clearCanvas();
-	if (role === "drawer") {
-		disableDrawing();
-	}
-	notifyUser("New round starting...");
-	setTimeout(() => {
-		joinRoom(currentRoom); // Rejoin the current room to start a new round
-	}, 2000);
 });
 
 document.getElementById("erase").addEventListener("click", () => {
@@ -93,7 +80,7 @@ document.getElementById("erase").addEventListener("click", () => {
 });
 
 document.getElementById("guess-input").addEventListener("keypress", (e) => {
-	if (e.key === "Enter") {
+	if (e.key === "Enter" && role === "guesser") {
 		const guess = e.target.value;
 		socket.emit("submit guess", guess);
 		e.target.value = "";
@@ -125,59 +112,59 @@ function draw() {
 }
 
 function drawLine({ pmouseX, pmouseY, mouseX, mouseY, color, weight }) {
-	stroke(...color);
+	stroke(color);
 	strokeWeight(weight);
 	line(pmouseX, pmouseY, mouseX, mouseY);
 }
 
 function clearCanvas() {
-	clear();
-	background(255);
+	background(255); // Repeint le canvas en blanc
 }
 
-document.getElementById("room-1").addEventListener("click", () => {
-	joinRoom("room-1");
-});
+function disableDrawing() {
+	noLoop();
+}
 
-document.getElementById("room-2").addEventListener("click", () => {
-	joinRoom("room-2");
-});
-
-function joinRoom(room) {
-	if (currentRoom) {
-		socket.emit("leave", currentRoom);
-	}
-	socket.emit("join", room);
-	currentRoom = room;
-	clearCanvas(); // Clear canvas when switching rooms
+function enableDrawing() {
+	loop();
 }
 
 function notifyUser(message) {
 	const notification = document.createElement("div");
-	notification.className = "notification";
 	notification.textContent = message;
 	document.body.appendChild(notification);
-	setTimeout(() => {
-		notification.remove();
-	}, 3000); // Supprime la notification après 3 secondes
 }
 
-function updateUI() {
-	const eraseButton = document.getElementById("erase");
-	const passButton = document.getElementById("pass");
-	if (role === "drawer") {
-		eraseButton.disabled = false;
-		passButton.disabled = false;
-	} else {
-		eraseButton.disabled = true;
-		passButton.disabled = true;
+function updatePoints(points) {
+	const pointsContainer = document.getElementById("points");
+	pointsContainer.innerHTML = ""; // Efface le contenu précédent
+	for (const [id, point] of Object.entries(points)) {
+		const pointEntry = document.createElement("div");
+		pointEntry.textContent = `User ${id}: ${point} points`;
+		pointsContainer.appendChild(pointEntry);
 	}
 }
 
-function enableDrawing() {
-	document.body.style.cursor = "crosshair"; // Change the cursor to a crosshair when drawing
-}
+// Sample room join for testing purposes
+document.getElementById("room-1").addEventListener("click", () => {
+	socket.emit("join", "room-1");
+});
 
-function disableDrawing() {
-	document.body.style.cursor = "default"; // Change the cursor to default
-}
+document.getElementById("room-2").addEventListener("click", () => {
+	socket.emit("join", "room-2");
+});
+
+document.getElementById("quit").addEventListener("click", () => {
+	if (currentRoom) {
+		socket.emit("leave", currentRoom);
+		notifyUser("You have left the room.");
+		clearCanvas();
+		document.getElementById("guess-input").disabled = true;
+		document.getElementById("erase").disabled = true;
+		role = null;
+		currentRoom = null;
+	}
+});
+
+window.setup = setup;
+window.draw = draw;

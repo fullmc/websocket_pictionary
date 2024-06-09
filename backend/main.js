@@ -7,7 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 let __dirname = fileURLToPath(import.meta.url);
-__dirname = __dirname.substring(0, __dirname.lastIndexOf("/")); // Remove the last part of the path
+__dirname = __dirname.substring(0, __dirname.lastIndexOf("/"));
 
 const app = express();
 const server = http.createServer(app);
@@ -30,13 +30,13 @@ const canvasData = {
 };
 
 const roomData = {
-	"room-1": { drawer: null, users: [], points: {} },
-	"room-2": { drawer: null, users: [], points: {} },
+	"room-1": { drawer: null, users: [], points: {}, currentWord: null },
+	"room-2": { drawer: null, users: [], points: {}, currentWord: null },
 };
 
 const roomWords = {
-	"room-1": ["apple", "banana", "poo", "sofa", "monkey"],
-	"room-2": ["fig", "grape", "honeydew", "kiwi", "lemon"],
+	"room-1": ["pomme", "banane", "singe", "canapé", "ordinateur"],
+	"room-2": ["apple", "banana", "monkey", "sofa", "computer"],
 };
 
 io.on("connection", (socket) => {
@@ -101,6 +101,7 @@ io.on("connection", (socket) => {
 			io.to(room).emit("user notification", `${socket.id} guessed the word!`);
 			io.to(room).emit("update points", roomData[room].points);
 			io.to(room).emit("new round"); // Start a new round
+			assignRoles(room); // Reassign roles and start a new game
 		}
 	});
 
@@ -121,7 +122,10 @@ io.on("connection", (socket) => {
 
 	function assignRoles(room) {
 		if (roomData[room].users.length > 0) {
-			if (!roomData[room].drawer || roomData[room].users.length === 1) {
+			if (
+				!roomData[room].drawer ||
+				!roomData[room].users.includes(roomData[room].drawer)
+			) {
 				const drawer =
 					roomData[room].users[
 						Math.floor(Math.random() * roomData[room].users.length)
