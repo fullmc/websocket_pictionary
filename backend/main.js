@@ -5,8 +5,10 @@ import { Server } from "socket.io";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
+
 let __dirname = fileURLToPath(import.meta.url);
 __dirname = __dirname.substring(0, __dirname.lastIndexOf("/")); // Remove the last part of the path
+
 const app = express();
 const server = http.createServer(app);
 const PORT = 5500;
@@ -54,10 +56,10 @@ io.on("connection", (socket) => {
 		console.log(`${socket.id} joined room: ${room}`);
 		socket.emit("canvas data", canvasData[room]);
 
-		// Start game if drawer not assigned
-		if (!roomData[room].drawer) {
-			startGame(room);
-		}
+		// Reassign roles and reset canvas when joining room
+		canvasData[room] = [];
+		io.to(room).emit("erase"); // Clear canvas for all users in the room
+		assignRoles(room);
 	});
 
 	socket.on("draw", (data) => {
@@ -87,24 +89,31 @@ io.on("connection", (socket) => {
 			);
 			if (roomData[room].drawer === socket.id) {
 				roomData[room].drawer = null;
-				// Reassign drawer if any users left in the room
-				if (roomData[room].users.length > 0) {
-					startGame(room);
-				}
 			}
+			assignRoles(room);
 		});
 		socket.broadcast.emit("user notification", `${socket.id} is offline`);
 	});
 
-	function startGame(room) {
+	function assignRoles(room) {
 		if (roomData[room].users.length > 0) {
-			const drawer =
-				roomData[room].users[
-					Math.floor(Math.random() * roomData[room].users.length)
-				];
-			roomData[room].drawer = drawer;
-			io.to(room).emit("role", { drawer, role: "guesser" });
-			io.to(drawer).emit("role", { drawer, role: "drawer" });
+			if (!roomData[room].drawer || roomData[room].users.length === 1) {
+				const drawer =
+					roomData[room].users[
+						Math.floor(Math.random() * roomData[room].users.length)
+					];
+				roomData[room].drawer = drawer;
+			}
+			roomData[room].users.forEach((id) => {
+				if (id === roomData[room].drawer) {
+					io.to(id).emit("role", { drawer: id, role: "drawer" });
+				} else {
+					io.to(id).emit("role", {
+						drawer: roomData[room].drawer,
+						role: "guesser",
+					});
+				}
+			});
 			io.to(room).emit("countdown", 3); // Start 3 seconds countdown
 			setTimeout(() => {
 				io.to(room).emit("game start");

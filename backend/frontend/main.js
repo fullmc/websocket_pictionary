@@ -32,6 +32,15 @@ socket.on("role", ({ drawer, role: assignedRole }) => {
 	role = assignedRole;
 	if (assignedRole === "drawer") {
 		notifyUser("You are the drawer!");
+		document.getElementById("guess-input").disabled = true;
+		const userRole = document.createElement("div");
+		userRole.textContent = "Drawer";
+		document.body.appendChild(userRole);
+	} else if (assignedRole === "guesser") {
+		notifyUser("You are a guesser!");
+		const userRole = document.createElement("div");
+		userRole.textContent = "Guesser";
+		document.body.appendChild(userRole);
 	}
 	updateUI();
 });
@@ -114,7 +123,7 @@ function notifyUser(message) {
 	document.body.appendChild(notification);
 	setTimeout(() => {
 		notification.remove();
-	}, 5000); // Supprime la notification après 3 secondes
+	}, 3000); // Supprime la notification après 3 secondes
 }
 
 function updateUI() {
