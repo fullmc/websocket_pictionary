@@ -82,9 +82,7 @@ socket.on("update points", (points) => {
 
 socket.on("word to draw", (word) => {
 	if (role === "drawer") {
-		document.getElementById(
-			"word-to-draw"
-		).textContent = `Word to draw: ${word}`;
+		document.getElementById("word-to-draw").textContent = `Draw a ${word}`;
 	}
 });
 
@@ -153,11 +151,14 @@ function enableDrawing() {
 
 function notifyUser(message) {
 	const notification = document.getElementById("notification");
-	notification.style.display = "block";
-	notification.textContent = message;
-	setTimeout(() => {
-		notification.textContent = "";
-	}, 3000);
+	if ((notification.textContent = message)) {
+		notification.style.display = "block";
+		notification.style.padding = "10px";
+		setTimeout(() => {
+			notification.textContent = "";
+			notification.style.display = "none";
+		}, 3000);
+	}
 }
 
 function updatePoints(points) {
@@ -184,8 +185,11 @@ document.getElementById("quit").addEventListener("click", () => {
 		socket.emit("leave", currentRoom);
 		notifyUser("You have left the room.");
 		clearCanvas();
+		document.getElementById("countdown").textContent = "";
+		document.getElementById("user-role").textContent = "";
 		document.getElementById("guess-input").disabled = true;
 		document.getElementById("erase").disabled = true;
+
 		role = null;
 		currentRoom = null;
 	}
