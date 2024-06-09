@@ -39,6 +39,11 @@ const roomWords = {
 	"room-2": ["apple", "banana", "monkey", "sofa", "computer"],
 };
 
+const roomWordIndices = {
+	"room-1": 0,
+	"room-2": 0,
+};
+
 io.on("connection", (socket) => {
 	console.log(`New connection: ${socket.id}`);
 
@@ -144,20 +149,22 @@ io.on("connection", (socket) => {
 			});
 			io.to(room).emit("countdown", 3); // Start 3 seconds countdown
 			setTimeout(() => {
-				const randomWord =
-					roomWords[room][Math.floor(Math.random() * roomWords[room].length)];
-				roomData[room].currentWord = randomWord;
-				io.to(roomData[room].drawer).emit("word to draw", randomWord);
+				assignNewWord(room);
 				io.to(room).emit("game start");
 			}, 3000);
 		}
 	}
 
 	function assignNewWord(room) {
-		const randomWord =
-			roomWords[room][Math.floor(Math.random() * roomWords[room].length)];
-		roomData[room].currentWord = randomWord;
-		io.to(roomData[room].drawer).emit("word to draw", randomWord);
+		const words = roomWords[room];
+		const currentIndex = roomWordIndices[room];
+		const newWord = words[currentIndex];
+
+		roomData[room].currentWord = newWord;
+		io.to(roomData[room].drawer).emit("word to draw", newWord);
+
+		// Update the index for the next word
+		roomWordIndices[room] = (currentIndex + 1) % words.length;
 	}
 });
 
