@@ -30,8 +30,8 @@ const canvasData = {
 };
 
 const roomData = {
-	"room-1": { drawer: null, users: [], points: {}, currentWord: null },
-	"room-2": { drawer: null, users: [], points: {}, currentWord: null },
+	"room-1": { drawer: null, guessers: [], users: [], points: {}, currentWord: null, start: false },
+	"room-2": { drawer: null, guessers: [], users: [], points: {}, currentWord: null, start: false },
 };
 
 const roomWords = {
@@ -125,11 +125,14 @@ io.on("connection", (socket) => {
 	socket.on("play", () => {
 		const rooms = Array.from(socket.rooms);
 		const room = rooms.find((r) => r !== socket.id);
-		if (room) {
-			assignRoles(room);
-			startSessionTimer(room, 60); // Démarre le minuteur pour une session de 60 secondes
-			assignNewWord(room);
-			io.to(room).emit("game start");
+		if (roomData[room].start === false) {
+			if (room) {
+				assignRoles(room);
+				startSessionTimer(room, 60); // Démarre le minuteur pour une session de 60 secondes
+				roomData[room].start = true;
+				assignNewWord(room);
+				io.to(room).emit("game start");
+			}
 		}
 	});
 
@@ -143,40 +146,13 @@ io.on("connection", (socket) => {
 			);
 			return; // Sortir de la fonction sans mettre à jour les rôles
 		}
-
-		if (
-			!roomData[room].drawer ||
-			!roomData[room].users.includes(roomData[room].drawer)
-		) {
-			// Si aucun dessinateur n'est défini ou si le dessinateur actuel n'est plus dans la salle, attribuez-en un nouveau
-			const availableUsers = roomData[room].users.filter(
-				(id) => id !== roomData[room].drawer
-			); // Exclure le dessinateur actuel
-			if (availableUsers.length > 0) {
-				roomData[room].drawer = availableUsers[0]; // Assigner le premier utilisateur comme dessinateur
-			} else {
-				// Aucun joueur disponible pour être dessinateur, informez les joueurs de la nécessité de plus de joueurs
-				io.to(room).emit(
-					"user notification",
-					"Not enough players to start the game. Need at least one more player."
-				);
-				return; // Sortir de la fonction sans mettre à jour les rôles
-			}
-		}
 		updateRoles(room); // Mettre à jour les rôles pour tous les joueurs dans la salle
 	}
 
 	function updateRoles(room) {
-		roomData[room].users.forEach((id) => {
-			if (id === roomData[room].drawer) {
-				io.to(id).emit("role", { drawer: id, role: "drawer" });
-			} else {
-				io.to(id).emit("role", {
-					drawer: roomData[room].drawer,
-					role: "guesser",
-				});
-			}
-		});
+		let random = Math.random() * roomData[room].users.length;
+
+		roomData[room].drawer = roomData[room].users[random];
 	}
 
 	function assignNewWord(room) {
@@ -192,11 +168,15 @@ io.on("connection", (socket) => {
 
 	function startSessionTimer(room, duration) {
 		let timer = duration;
+
 		const interval = setInterval(() => {
+
 			io.to(room).emit("session countdown", timer);
+
 			if (--timer < 0) {
 				clearInterval(interval);
 				io.to(room).emit("session ended");
+				roomData[room].start = false;
 			}
 		}, 1000);
 	}
